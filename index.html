@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Caixa do MEI</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: barra superior com mês + DAS, faixa de indicadores, depois grade 2 colunas (lançar/lista | gráficos), 1 coluna no celular */
+:root{
+  --bg:#f3f6f4; --surface:#ffffff; --fg:#14231c; --muted:#5b6d64; --line:#dbe4df;
+  --accent:#0f7a55; --accent-soft:#e1f2ea; --in:#0f7a55; --out:#c2412d; --out-soft:#fbe9e5;
+  --warn:#b7791f; --warn-soft:#fdf3dc; --bar-bg:#e8eeeb;
+  --f-display:"Sora", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Inter", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1714; --surface:#16211c; --fg:#e4eee9; --muted:#93a69c; --line:#26352e;
+  --accent:#3fc28e; --accent-soft:#173327; --in:#3fc28e; --out:#f07a64; --out-soft:#3a1f1a;
+  --warn:#e6b450; --warn-soft:#3a2f17; --bar-bg:#22302a; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0f1714; --surface:#16211c; --fg:#e4eee9; --muted:#93a69c; --line:#26352e;
+  --accent:#3fc28e; --accent-soft:#173327; --in:#3fc28e; --out:#f07a64; --out-soft:#3a1f1a;
+  --warn:#e6b450; --warn-soft:#3a2f17; --bar-bg:#22302a; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:18px}
+.num{font-variant-numeric:tabular-nums}
+h1,h2{font-family:var(--f-display);margin:0;text-wrap:balance}
+h1{font-size:22px;font-weight:700;letter-spacing:-.01em}
+h2{font-size:15px;font-weight:600}
+.label{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600}
+
+header.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:34px;height:34px;border-radius:9px;background:var(--accent);display:grid;place-items:center;color:var(--surface);font-family:var(--f-display);font-weight:700;font-size:15px}
+.brand small{display:block;color:var(--muted);font-size:12px}
+.month{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:4px}
+.month span{min-width:132px;text-align:center;font-weight:600;font-family:var(--f-display);font-size:14px}
+button{font:inherit;cursor:pointer}
+.icon-btn{border:0;background:transparent;color:var(--fg);width:30px;height:30px;border-radius:7px;font-size:16px}
+.icon-btn:hover{background:var(--bar-bg)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.notice{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;background:var(--warn-soft);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:13px}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:8px;padding:7px 12px;font-weight:500;font-size:13px}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--surface);font-weight:600}
+
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.kpi .v{font-family:var(--f-display);font-size:24px;font-weight:600;letter-spacing:-.01em}
+.kpi .s{font-size:12px;color:var(--muted)}
+.v.in{color:var(--in)} .v.out{color:var(--out)}
+.meter{height:8px;border-radius:99px;background:var(--bar-bg);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--accent);border-radius:99px}
+.meter.warn i{background:var(--warn)} .meter.over i{background:var(--out)}
+
+.das{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:12px;padding:12px 16px}
+.das.paid{border-left-color:var(--accent)}
+.das .t{font-weight:600}
+.das .d{font-size:12.5px;color:var(--muted)}
+.pill{display:inline-block;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:99px;background:var(--warn-soft);color:var(--warn)}
+.pill.ok{background:var(--accent-soft);color:var(--accent)}
+.pill.late{background:var(--out-soft);color:var(--out)}
+
+.grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:18px;align-items:start}
+.col{display:flex;flex-direction:column;gap:18px;min-width:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.panel-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+
+form.add{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{font-size:12px;color:var(--muted);font-weight:500}
+.f-desc{grid-column:span 3}.f-val{grid-column:span 3}.f-date{grid-column:span 2}.f-cat{grid-column:span 2}.f-sub{grid-column:span 2;justify-content:flex-end}
+textarea{font-size:12px;font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0;resize:vertical;word-break:break-all}
+.bk-p{margin:0;font-size:13px;color:var(--muted);max-width:65ch}
+.bk-actions{display:flex;gap:8px;flex-wrap:wrap}
+.bk-restore{display:flex;flex-direction:column;gap:8px}
+.bk-restore label:not(.btn){font-size:12px;color:var(--muted);font-weight:500}
+.bk-confirm{display:flex;flex-direction:column;gap:8px;background:var(--warn-soft);border-radius:8px;padding:10px 12px;font-size:13px}
+label.btn{cursor:pointer;display:inline-flex;align-items:center}
+input,select{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+input:focus,select:focus{outline:2px solid var(--accent);outline-offset:0;border-color:var(--accent)}
+.seg{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:3px;gap:3px}
+.seg button{border:0;background:transparent;border-radius:7px;padding:7px;color:var(--muted);font-weight:600}
+.seg button[aria-pressed="true"].in{background:var(--accent-soft);color:var(--in)}
+.seg button[aria-pressed="true"].out{background:var(--out-soft);color:var(--out)}
+.err{grid-column:1/-1;color:var(--out);font-size:12.5px;margin:0}
+
+.list{display:flex;flex-direction:column}
+.row{display:grid;grid-template-columns:44px minmax(0,1fr) auto 30px;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.day{font-family:var(--f-display);font-weight:600;font-size:15px;text-align:center;line-height:1.1}
+.day small{display:block;font-family:var(--f-body);font-weight:500;font-size:10.5px;color:var(--muted);text-transform:uppercase}
+.desc{min-width:0}
+.desc b{display:block;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.desc span{font-size:12px;color:var(--muted)}
+.amt{font-weight:600;white-space:nowrap}
+.amt.in{color:var(--in)}.amt.out{color:var(--out)}
+.del{border:0;background:transparent;color:var(--muted);border-radius:6px;width:28px;height:28px;font-size:15px}
+.del:hover{background:var(--out-soft);color:var(--out)}
+.empty{color:var(--muted);text-align:center;padding:22px 8px;font-size:13px}
+.filters{display:flex;gap:6px}
+.chip{border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:99px;padding:3px 10px;font-size:12px;font-weight:500}
+.chip[aria-pressed="true"]{background:var(--fg);color:var(--surface);border-color:var(--fg)}
+
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+svg text{fill:var(--muted);font-family:var(--f-body);font-size:11px}
+.cats{display:flex;flex-direction:column;gap:10px}
+.cat{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;font-size:13px}
+.cat .meter{grid-column:1/-1;height:7px}
+.cat .meter i{background:var(--out)}
+
+.settings{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.foot{font-size:12px;color:var(--muted);text-align:center}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--surface);padding:9px 16px;border-radius:9px;font-size:13px;font-weight:500;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+
+@media (max-width:900px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.grid{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:480px){
+  .kpis{grid-template-columns:minmax(0,1fr)}
+  form.add{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .f-desc,.f-val{grid-column:1/-1}.f-date,.f-cat{grid-column:span 1}.f-sub{grid-column:1/-1}
+  .settings{grid-template-columns:1fr}
+  .month span{min-width:110px}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">C$</div>
+      <div><h1>Caixa do MEI</h1><small>Controle financeiro simples para microempreendedores</small></div>
+    </div>
+    <div class="month" role="group" aria-label="Mês exibido">
+      <button class="icon-btn" id="prevM" aria-label="Mês anterior">‹</button>
+      <span id="monthLabel" class="num">—</span>
+      <button class="icon-btn" id="nextM" aria-label="Próximo mês">›</button>
+    </div>
+  </header>
+
+  <div class="notice" id="sampleNotice" hidden>
+    <span><b>Dados de exemplo.</b> Estes lançamentos são fictícios, só para mostrar como o painel funciona.</span>
+    <button class="btn" id="clearSample">Começar do zero</button>
+  </div>
+
+  <section class="kpis" aria-label="Resumo do mês">
+    <div class="kpi"><span class="label">Entradas do mês</span><span class="v in num" id="kIn">—</span><span class="s" id="kInS"></span></div>
+    <div class="kpi"><span class="label">Saídas do mês</span><span class="v out num" id="kOut">—</span><span class="s" id="kOutS"></span></div>
+    <div class="kpi"><span class="label">Saldo do mês</span><span class="v num" id="kBal">—</span><span class="s" id="kBalS"></span></div>
+    <div class="kpi"><span class="label">Faturamento no ano</span><span class="v num" id="kYear">—</span>
+      <div class="meter" id="limMeter"><i id="limBar" style="width:0"></i></div><span class="s" id="kYearS"></span></div>
+  </section>
+
+  <section class="das" id="dasBox" aria-label="Lembrete do DAS">
+    <div>
+      <div class="t" id="dasTitle">DAS</div>
+      <div class="d" id="dasDesc"></div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <span class="pill" id="dasPill">—</span>
+      <button class="btn" id="dasToggle">Marcar como pago</button>
+    </div>
+  </section>
+
+  <div class="grid">
+    <div class="col">
+      <section class="panel" aria-labelledby="hAdd">
+        <div class="panel-h"><h2 id="hAdd">Novo lançamento</h2><span class="label">Registre cada venda ou gasto</span></div>
+        <form class="add" id="addForm" novalidate>
+          <div class="seg" role="group" aria-label="Tipo de lançamento">
+            <button type="button" class="in" id="tIn" aria-pressed="true">＋ Entrada</button>
+            <button type="button" class="out" id="tOut" aria-pressed="false">− Saída</button>
+          </div>
+          <div class="field f-desc"><label for="fDesc">Descrição</label><input id="fDesc" placeholder="Ex.: Corte e escova" maxlength="80"></div>
+          <div class="field f-val"><label for="fVal">Valor (R$)</label><input id="fVal" class="num" inputmode="decimal" placeholder="0,00"></div>
+          <div class="field f-date"><label for="fDate">Data</label><input id="fDate" type="date"></div>
+          <div class="field f-cat"><label for="fCat">Categoria</label><select id="fCat"></select></div>
+          <div class="field f-sub"><button class="btn primary" type="submit">Adicionar</button></div>
+          <p class="err" id="fErr" hidden></p>
+        </form>
+      </section>
+
+      <section class="panel" aria-labelledby="hList">
+        <div class="panel-h">
+          <h2 id="hList">Lançamentos do mês</h2>
+          <div class="filters" role="group" aria-label="Filtrar">
+            <button class="chip" data-f="all" aria-pressed="true">Todos</button>
+            <button class="chip" data-f="in" aria-pressed="false">Entradas</button>
+            <button class="chip" data-f="out" aria-pressed="false">Saídas</button>
+          </div>
+        </div>
+        <div class="list" id="list"></div>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="panel" aria-labelledby="hChart">
+        <div class="panel-h"><h2 id="hChart">Últimos 6 meses</h2>
+          <div class="legend"><span><i style="background:var(--in)"></i>Entradas</span><span><i style="background:var(--out)"></i>Saídas</span></div></div>
+        <div id="chart"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="hCats">
+        <div class="panel-h"><h2 id="hCats">Para onde vai o dinheiro</h2><span class="label">Saídas por categoria</span></div>
+        <div class="cats" id="cats"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="hBk">
+        <div class="panel-h"><h2 id="hBk">Backup dos dados</h2><span class="pill" id="bkPill">Nenhum backup ainda</span></div>
+        <p class="bk-p">Os lançamentos ficam salvos só neste aparelho, neste navegador. Faça um backup toda semana e guarde o código numa conversa sua no WhatsApp ou no bloco de notas. Se trocar de celular ou limpar o navegador, é só restaurar.</p>
+        <div class="bk-actions"><button class="btn primary" id="bkCopy">Fazer backup</button><button class="btn" id="bkOpen">Restaurar backup</button></div>
+        <textarea id="bkOut" readonly rows="3" hidden aria-label="Código do backup"></textarea>
+        <div id="bkRestore" class="bk-restore" hidden>
+          <label for="bkIn">Cole aqui o código do backup</label>
+          <textarea id="bkIn" rows="4" placeholder="CAIXAMEI1:..."></textarea>
+          <div class="bk-actions"><button class="btn primary" id="bkCheck">Restaurar</button><label class="btn" for="bkFile">Abrir arquivo .txt</label><input type="file" id="bkFile" accept=".txt,text/plain" hidden><button class="btn" id="bkCancel">Cancelar</button></div>
+          <div id="bkConfirm" class="bk-confirm" hidden><span id="bkConfirmMsg"></span><div class="bk-actions"><button class="btn primary" id="bkYes">Confirmar e substituir</button><button class="btn" id="bkNo">Voltar</button></div></div>
+          <p class="err" id="bkErr" hidden></p>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="hSet">
+        <div class="panel-h"><h2 id="hSet">Configurações</h2></div>
+        <div class="settings">
+          <div class="field"><label for="sDas">Valor mensal do DAS (R$)</label><input id="sDas" class="num" inputmode="decimal"></div>
+          <div class="field"><label for="sLim">Limite anual do MEI (R$)</label><input id="sLim" class="num" inputmode="decimal"></div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn" id="copyCsv">Copiar planilha (CSV)</button>
+        </div>
+        <span class="s" style="font-size:12px;color:var(--muted)">Confira o valor do seu DAS no Portal do Empreendedor ou no app MEI.</span>
+      </section>
+    </div>
+  </div>
+
+  <p class="foot">Caixa do MEI · Desenvolvido por Jônatas Abreu</p>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  const KEY = "caixa-mei-v1";
+  const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+  const MES_C = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+  const CATS = { in:["Corte","Escova/Penteado","Coloração/Química","Manicure","Pedicure","Unhas em gel/fibra","Venda de produtos","Outras entradas"], out:["Produtos de cabelo","Esmaltes e materiais","Descartáveis","Aluguel da cadeira/espaço","Energia/Água","Internet/Telefone","Transporte","Imposto (DAS)","Equipamentos","Marketing","Outras saídas"] };
+  const brl = v => v.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+  const pad = n => String(n).padStart(2,"0");
+  const ym = (y,m) => y+"-"+pad(m+1);
+  const today = new Date();
+  const todayStr = today.getFullYear()+"-"+pad(today.getMonth()+1)+"-"+pad(today.getDate());
+
+  function sample(){
+    const out=[]; let id=1;
+    const add=(y,m,d,type,desc,cat,val)=>out.push({id:"s"+(id++),date:y+"-"+pad(m+1)+"-"+pad(d),type,desc,cat,val});
+    const base=new Date(today.getFullYear(),today.getMonth(),1);
+    const plans=[
+      [[2,"in","Corte e escova – 4 clientes","Escova/Penteado",280],[3,"in","Manicure e pedicure – 6 clientes","Manicure",270],[5,"out","Tintas e oxidante","Produtos de cabelo",214.5],[6,"in","Coloração completa","Coloração/Química",230],[9,"in","Alongamento em gel – 3 clientes","Unhas em gel/fibra",360],[10,"out","Aluguel do espaço","Aluguel da cadeira/espaço",600],[12,"out","Esmaltes, lixas e algodão","Esmaltes e materiais",98.7],[14,"in","Cortes da semana","Corte",420],[16,"out","Luvas e toalhas descartáveis","Descartáveis",64.9],[18,"in","Progressiva","Coloração/Química",350],[20,"out","DAS do mês anterior","Imposto (DAS)",81.9],[21,"in","Manicure – 8 clientes","Manicure",280],[23,"in","Venda de shampoo e máscara","Venda de produtos",145],[25,"out","Conta de energia","Energia/Água",132.4],[28,"in","Penteados para casamento","Escova/Penteado",480]],
+      [[3,"in","Cortes da semana","Corte",390],[6,"out","Produtos de cabelo","Produtos de cabelo",260],[8,"in","Manicure e pedicure","Manicure",540],[10,"out","Aluguel do espaço","Aluguel da cadeira/espaço",600],[15,"in","Colorações e mechas","Coloração/Química",780],[20,"out","DAS","Imposto (DAS)",81.9],[21,"out","Impulsionamento no Instagram","Marketing",50],[24,"in","Unhas em gel","Unhas em gel/fibra",420],[26,"out","Internet","Internet/Telefone",99.9]],
+      [[4,"in","Cortes e escovas","Escova/Penteado",620],[7,"out","Esmaltes e materiais","Esmaltes e materiais",120],[10,"out","Aluguel do espaço","Aluguel da cadeira/espaço",600],[16,"in","Manicure e pedicure","Manicure",610],[20,"out","DAS","Imposto (DAS)",81.9],[25,"in","Colorações","Coloração/Química",540],[28,"out","Energia","Energia/Água",128]],
+      [[5,"in","Cortes da semana","Corte",450],[8,"out","Produtos de cabelo","Produtos de cabelo",230],[10,"out","Aluguel do espaço","Aluguel da cadeira/espaço",600],[18,"in","Manicure e pedicure","Manicure",580],[20,"out","DAS","Imposto (DAS)",81.9],[22,"in","Progressivas","Coloração/Química",700],[27,"out","Secador novo","Equipamentos",289]],
+      [[3,"in","Cortes e escovas","Escova/Penteado",560],[9,"out","Esmaltes e descartáveis","Descartáveis",140],[10,"out","Aluguel do espaço","Aluguel da cadeira/espaço",600],[19,"in","Manicure e pedicure","Manicure",640],[20,"out","DAS","Imposto (DAS)",81.9],[24,"in","Colorações","Coloração/Química",480]],
+      [[6,"in","Cortes da semana","Corte",410],[9,"out","Produtos de cabelo","Produtos de cabelo",210],[10,"out","Aluguel do espaço","Aluguel da cadeira/espaço",600],[17,"in","Manicure e pedicure","Manicure",520],[20,"out","DAS","Imposto (DAS)",81.9]]
+    ];
+    plans.forEach((items,back)=>{
+      const d=new Date(base.getFullYear(),base.getMonth()-back,1);
+      const last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
+      items.forEach(([day,...rest])=>{ if(back===0 && day>today.getDate()) return; add(d.getFullYear(),d.getMonth(),Math.min(day,last),...rest); });
+    });
+    return out;
+  }
+
+  let state;
+  function defaults(){ return {entries:sample(), isSample:true, das:81.9, limit:81000, paid:{}}; }
+  try{ const raw=localStorage.getItem(KEY); state=raw?JSON.parse(raw):defaults(); }catch(e){ state=defaults(); }
+  if(!state || !Array.isArray(state.entries)) state=defaults();
+  state.paid = state.paid||{};
+  if(state.isSample && !state.entries.some(e=>String(e.id)[0]==="u")) state.entries=sample();
+  function save(){ try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){} }
+
+  let view={y:today.getFullYear(),m:today.getMonth()}, filter="all", type="in";
+  const $=id=>document.getElementById(id);
+  function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove("show"),2200); }
+  function parseVal(s){ s=String(s||"").trim().replace(/\s|R\$/g,""); if(s.includes(",")) s=s.replace(/\./g,"").replace(",","."); const n=parseFloat(s); return isFinite(n)?Math.round(n*100)/100:NaN; }
+  function fmtInput(n){ return n.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+  function monthEntries(y,m){ const k=ym(y,m); return state.entries.filter(e=>e.date.slice(0,7)===k); }
+  function sum(arr,t){ return arr.filter(e=>e.type===t).reduce((a,e)=>a+e.val,0); }
+
+  function fillCats(){ const s=$("fCat"); s.innerHTML=CATS[type].map(c=>`<option>${c}</option>`).join(""); }
+  function setType(t){ type=t; $("tIn").setAttribute("aria-pressed",t==="in"); $("tOut").setAttribute("aria-pressed",t==="out"); fillCats(); }
+
+  function render(){
+    $("monthLabel").textContent=MESES[view.m]+" "+view.y;
+    $("sampleNotice").hidden=!state.isSample;
+    const es=monthEntries(view.y,view.m), inn=sum(es,"in"), out=sum(es,"out"), bal=inn-out;
+    $("kIn").textContent=brl(inn); $("kOut").textContent=brl(out);
+    $("kIn").nextElementSibling.textContent=es.filter(e=>e.type==="in").length+" lançamentos";
+    $("kOutS").textContent=es.filter(e=>e.type==="out").length+" lançamentos";
+    const kb=$("kBal"); kb.textContent=brl(bal); kb.className="v num "+(bal>=0?"in":"out");
+    $("kBalS").textContent= inn>0 ? "Margem de "+Math.round(bal/inn*100)+"% sobre as entradas" : "Sem entradas no mês";
+
+    // faturamento anual (receita bruta: soma das entradas do ano)
+    const yIn=state.entries.filter(e=>e.type==="in"&&e.date.slice(0,4)===String(view.y)).reduce((a,e)=>a+e.val,0);
+    const pct=state.limit>0?yIn/state.limit*100:0;
+    $("kYear").textContent=brl(yIn);
+    $("limBar").style.width=Math.min(100,pct).toFixed(1)+"%";
+    $("limMeter").className="meter"+(pct>=100?" over":pct>=80?" warn":"");
+    $("kYearS").textContent=pct.toFixed(1).replace(".",",")+"% do limite de "+brl(state.limit)+(pct>=80&&pct<100?" · atenção":pct>=100?" · limite ultrapassado":"");
+
+    renderDas(); renderList(es); renderChart(); renderCats(es);
+  }
+
+  function renderDas(){
+    // DAS da competência (mês exibido) vence dia 20 do mês seguinte
+    const comp=ym(view.y,view.m), due=new Date(view.y,view.m+1,20);
+    const paid=!!state.paid[comp];
+    const t0=new Date(today.getFullYear(),today.getMonth(),today.getDate());
+    const days=Math.round((due-t0)/86400000);
+    $("dasTitle").textContent="DAS de "+MESES[view.m].toLowerCase()+" · "+brl(state.das);
+    $("dasDesc").textContent="Vencimento em "+pad(due.getDate())+"/"+pad(due.getMonth()+1)+"/"+due.getFullYear()+". Pague pelo app MEI ou pelo Portal do Empreendedor.";
+    const p=$("dasPill"), box=$("dasBox");
+    box.classList.toggle("paid",paid);
+    if(paid){ p.className="pill ok"; p.textContent="Pago"; }
+    else if(days<0){ p.className="pill late"; p.textContent="Vencido há "+(-days)+(days===-1?" dia":" dias"); }
+    else if(days===0){ p.className="pill late"; p.textContent="Vence hoje"; }
+    else { p.className="pill"; p.textContent="Faltam "+days+(days===1?" dia":" dias"); }
+    $("dasToggle").textContent=paid?"Desmarcar pagamento":"Marcar como pago";
+  }
+
+  function renderList(es){
+    const rows=es.filter(e=>filter==="all"||e.type===filter).sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id));
+    const el=$("list");
+    if(!rows.length){ el.innerHTML=`<div class="empty">Nenhum lançamento ${filter==="in"?"de entrada ":filter==="out"?"de saída ":""}em ${MESES[view.m].toLowerCase()}. Use o formulário acima para registrar o primeiro.</div>`; return; }
+    el.innerHTML=rows.map(e=>{ const d=+e.date.slice(8,10), m=+e.date.slice(5,7)-1;
+      return `<div class="row"><div class="day num">${pad(d)}<small>${MES_C[m]}</small></div>
+      <div class="desc"><b>${esc(e.desc)}</b><span>${esc(e.cat)}</span></div>
+      <div class="amt num ${e.type}">${e.type==="in"?"+":"−"} ${brl(e.val)}</div>
+      <button class="del" data-id="${e.id}" aria-label="Excluir ${esc(e.desc)}">✕</button></div>`; }).join("");
+  }
+  function esc(s){ return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+  function renderChart(){
+    const months=[]; for(let i=5;i>=0;i--){ const d=new Date(view.y,view.m-i,1); const es=monthEntries(d.getFullYear(),d.getMonth()); months.push({lab:MES_C[d.getMonth()],inn:sum(es,"in"),out:sum(es,"out")}); }
+    const W=460,H=210,L=52,R=8,T=12,B=26, cw=W-L-R, ch=H-T-B;
+    const max=Math.max(100,...months.map(m=>Math.max(m.inn,m.out)));
+    const step=niceStep(max/4), top=Math.ceil(max/step)*step;
+    const y=v=>T+ch-(v/top)*ch;
+    let g="";
+    for(let v=0;v<=top+0.001;v+=step){ g+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/><text x="${L-8}" y="${y(v)+4}" text-anchor="end">${short(v)}</text>`; }
+    const gw=cw/6, bw=Math.min(18,gw*0.3);
+    months.forEach((m,i)=>{ const cx=L+gw*i+gw/2;
+      g+=`<rect x="${cx-bw-2}" y="${y(m.inn)}" width="${bw}" height="${Math.max(0,T+ch-y(m.inn))}" rx="3" fill="var(--in)"><title>Entradas ${m.lab}: ${brl(m.inn)}</title></rect>`;
+      g+=`<rect x="${cx+2}" y="${y(m.out)}" width="${bw}" height="${Math.max(0,T+ch-y(m.out))}" rx="3" fill="var(--out)"><title>Saídas ${m.lab}: ${brl(m.out)}</title></rect>`;
+      g+=`<text x="${cx}" y="${H-8}" text-anchor="middle" style="${i===5?'fill:var(--fg);font-weight:600':''}">${m.lab}</text>`; });
+    $("chart").innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Entradas e saídas dos últimos seis meses">${g}</svg>`;
+  }
+  function niceStep(x){ const p=Math.pow(10,Math.floor(Math.log10(x))); const f=x/p; return (f<=1?1:f<=2?2:f<=5?5:10)*p; }
+  function short(v){ return v>=1000?(v/1000).toLocaleString("pt-BR",{maximumFractionDigits:1})+" mil":String(Math.round(v)); }
+
+  function renderCats(es){
+    const outs=es.filter(e=>e.type==="out"), tot=outs.reduce((a,e)=>a+e.val,0), by={};
+    outs.forEach(e=>by[e.cat]=(by[e.cat]||0)+e.val);
+    const arr=Object.entries(by).sort((a,b)=>b[1]-a[1]);
+    $("cats").innerHTML=arr.length?arr.map(([c,v])=>`<div class="cat"><span>${esc(c)}</span><span class="num"><b>${brl(v)}</b> · ${Math.round(v/tot*100)}%</span><div class="meter"><i style="width:${(v/arr[0][1]*100).toFixed(1)}%"></i></div></div>`).join("")
+      :`<div class="empty">Sem saídas registradas neste mês.</div>`;
+  }
+
+  // eventos
+  $("prevM").onclick=()=>{ const d=new Date(view.y,view.m-1,1); view={y:d.getFullYear(),m:d.getMonth()}; render(); };
+  $("nextM").onclick=()=>{ const d=new Date(view.y,view.m+1,1); view={y:d.getFullYear(),m:d.getMonth()}; render(); };
+  $("tIn").onclick=()=>setType("in"); $("tOut").onclick=()=>setType("out");
+  document.querySelectorAll(".chip").forEach(b=>b.onclick=()=>{ filter=b.dataset.f; document.querySelectorAll(".chip").forEach(x=>x.setAttribute("aria-pressed",x===b)); renderList(monthEntries(view.y,view.m)); });
+  $("list").addEventListener("click",e=>{ const b=e.target.closest(".del"); if(!b) return; state.entries=state.entries.filter(x=>x.id!==b.dataset.id); save(); render(); toast("Lançamento excluído"); });
+  $("addForm").addEventListener("submit",e=>{
+    e.preventDefault(); const err=$("fErr");
+    const desc=$("fDesc").value.trim(), val=parseVal($("fVal").value), date=$("fDate").value;
+    let msg=""; if(!desc) msg="Escreva uma descrição, por exemplo “Corte e escova”."; else if(!(val>0)) msg="Informe um valor maior que zero, por exemplo 45,90."; else if(!/^\d{4}-\d{2}-\d{2}$/.test(date)) msg="Escolha a data do lançamento.";
+    if(msg){ err.textContent=msg; err.hidden=false; return; } err.hidden=true;
+    state.entries.push({id:"u"+Date.now(),date,type,desc,cat:$("fCat").value,val}); save();
+    view={y:+date.slice(0,4),m:+date.slice(5,7)-1};
+    $("fDesc").value=""; $("fVal").value=""; render(); toast(type==="in"?"Entrada adicionada":"Saída adicionada"); $("fDesc").focus();
+  });
+  $("dasToggle").onclick=()=>{ const k=ym(view.y,view.m); state.paid[k]=!state.paid[k]; save(); renderDas(); toast(state.paid[k]?"DAS marcado como pago":"Pagamento desmarcado"); };
+  $("clearSample").onclick=()=>{ state.entries=[]; state.paid={}; state.isSample=false; save(); render(); toast("Exemplos apagados. Comece pelo primeiro lançamento."); };
+  $("sDas").value=fmtInput(state.das); $("sLim").value=fmtInput(state.limit);
+  $("sDas").onchange=()=>{ const v=parseVal($("sDas").value); if(v>=0){ state.das=v; save(); renderDas(); } $("sDas").value=fmtInput(state.das); };
+  $("sLim").onchange=()=>{ const v=parseVal($("sLim").value); if(v>0){ state.limit=v; save(); render(); } $("sLim").value=fmtInput(state.limit); };
+  // backup
+  function encodeBk(){ const d={v:1,saved:new Date().toISOString(),entries:state.entries,das:state.das,limit:state.limit,paid:state.paid}; return "CAIXAMEI1:"+btoa(unescape(encodeURIComponent(JSON.stringify(d)))); }
+  function decodeBk(s){ const m=String(s||"").match(/CAIXAMEI1:([A-Za-z0-9+\/=\s]+)/); if(!m) throw new Error("x"); const d=JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/\s/g,""))))); if(!d||!Array.isArray(d.entries)) throw new Error("x"); d.entries=d.entries.filter(e=>e&&/^\d{4}-\d{2}-\d{2}$/.test(e.date)&&(e.type==="in"||e.type==="out")&&typeof e.val==="number"&&isFinite(e.val)).map(e=>({id:String(e.id||("u"+Math.random().toString(36).slice(2))),date:e.date,type:e.type,desc:String(e.desc||""),cat:String(e.cat||""),val:e.val})); return d; }
+  function renderBk(){ const p=$("bkPill"); if(!state.lastBk){ p.className="pill"; p.textContent="Nenhum backup ainda"; return; } const d=new Date(state.lastBk), days=Math.floor((Date.now()-state.lastBk)/86400000); p.className=days>7?"pill":"pill ok"; p.textContent=days>7?"Último backup há "+days+" dias":"Último backup: "+pad(d.getDate())+"/"+pad(d.getMonth()+1); }
+  let pending=null;
+  $("bkCopy").onclick=()=>{ const code=encodeBk(), out=$("bkOut"); out.value=code; out.hidden=false; state.lastBk=Date.now(); save(); renderBk();
+    const sel=()=>{ out.focus(); out.select(); toast("Selecione o código abaixo e copie."); };
+    try{ navigator.clipboard.writeText(code).then(()=>toast("Backup copiado. Cole no WhatsApp ou no bloco de notas."),sel); }catch(e){ sel(); } };
+  $("bkOpen").onclick=()=>{ $("bkRestore").hidden=false; $("bkConfirm").hidden=true; $("bkErr").hidden=true; $("bkIn").focus(); };
+  $("bkCancel").onclick=()=>{ $("bkRestore").hidden=true; $("bkIn").value=""; pending=null; };
+  function checkBk(){ const err=$("bkErr"); try{ pending=decodeBk($("bkIn").value); }catch(e){ pending=null; err.textContent="Código inválido. Copie o código inteiro, começando por CAIXAMEI1:"; err.hidden=false; $("bkConfirm").hidden=true; return; }
+    err.hidden=true; const sd=pending.saved?new Date(pending.saved):null;
+    $("bkConfirmMsg").textContent="O backup tem "+pending.entries.length+" lançamentos"+(sd&&!isNaN(sd)?" (feito em "+pad(sd.getDate())+"/"+pad(sd.getMonth()+1)+"/"+sd.getFullYear()+")":"")+". Ele vai substituir os "+state.entries.length+" lançamentos que estão neste aparelho.";
+    $("bkConfirm").hidden=false; }
+  $("bkCheck").onclick=checkBk;
+  $("bkNo").onclick=()=>{ $("bkConfirm").hidden=true; pending=null; };
+  $("bkYes").onclick=()=>{ if(!pending) return; state.entries=pending.entries; if(typeof pending.das==="number") state.das=pending.das; if(typeof pending.limit==="number"&&pending.limit>0) state.limit=pending.limit; state.paid=pending.paid&&typeof pending.paid==="object"?pending.paid:{}; state.isSample=false; const n=pending.entries.length; pending=null; save();
+    $("sDas").value=fmtInput(state.das); $("sLim").value=fmtInput(state.limit); $("bkRestore").hidden=true; $("bkIn").value=""; render(); toast("Backup restaurado: "+n+" lançamentos"); };
+  $("bkFile").onchange=e=>{ const f=e.target.files&&e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ $("bkIn").value=String(r.result||""); checkBk(); }; r.readAsText(f); e.target.value=""; };
+
+  $("copyCsv").onclick=()=>{
+    const lines=["data;tipo;descricao;categoria;valor"].concat(state.entries.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(e=>[e.date,e.type==="in"?"entrada":"saida",'"'+e.desc.replace(/"/g,'""')+'"',e.cat,e.val.toFixed(2).replace(".",",")].join(";")));
+    const txt=lines.join("\n");
+    try{ navigator.clipboard.writeText(txt).then(()=>toast("Planilha copiada. Cole no Excel ou Google Planilhas."),()=>toast("Não foi possível copiar neste navegador.")); }catch(e){ toast("Não foi possível copiar neste navegador."); }
+  };
+  // primeiro lançamento do usuário remove o aviso de exemplo
+  const origSave=save; save=function(){ if(state.isSample && state.entries.some(e=>e.id[0]==="u")) state.isSample=state.entries.some(e=>e.id[0]==="s"); origSave(); };
+
+  $("fDate").value=todayStr; setType("in"); render(); renderBk();
+})();
+</script>
+</body>
+</html>
